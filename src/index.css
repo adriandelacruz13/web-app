@@ -24,7 +24,7 @@
   /* Typography Colors */
   --text-primary: #F8FAFC;
   --text-secondary: #94A3B8;
-  --text-muted: #64748B;
+  --text-muted: #8B9EB8;
   --text-inverse: #0F172A;
 
   /* Borders & Dividers */
@@ -111,6 +111,49 @@ a {
 button, input, textarea, select {
   font-family: inherit;
   font-size: inherit;
+}
+
+/* Accessibility: visible, consistent keyboard focus */
+:focus-visible {
+  outline: 3px solid var(--accent-cyan);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Accessibility: skip-to-content link */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: var(--accent-cyan);
+  color: #04161B;
+  font-weight: 700;
+  padding: 12px 20px;
+  z-index: 11000;
+  border-radius: 0 0 var(--radius-md) 0;
+  text-decoration: none;
+}
+
+.skip-link:focus {
+  left: 0;
+  top: 0;
+  position: fixed;
+}
+
+/* Accessibility: honor reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* Layout Utilities */
@@ -293,4 +336,36 @@ button, input, textarea, select {
   background: rgba(244, 63, 94, 0.15);
   color: #FB7185;
   border: 1px solid rgba(244, 63, 94, 0.3);
+}
+
+/* Error Boundary State */
+.error-boundary {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-2xl);
+}
+
+.error-boundary-card {
+  max-width: 480px;
+  text-align: center;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-2xl);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.error-boundary-card h1 {
+  font-size: 1.5rem;
+}
+
+.error-boundary-card p {
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: var(--spacing-sm);
 }

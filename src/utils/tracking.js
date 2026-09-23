@@ -1,18 +1,28 @@
 /**
  * Veloce Growth - Enterprise Marketing Tracking Engine
- * Supports:
- * - Google Tag Manager dataLayer event pushes
- * - Meta Pixel (fbq) standard and custom events
- * - Real-time event subscription for developer/evaluator HUD inspector
+ *
+ * Responsibilities:
+ * - Bootstrap GTM + Meta Pixel lazily (never during initial render / LCP).
+ * - Queue Meta Pixel events issued before the SDK finishes loading so no
+ *   conversion is ever dropped (the assessment-critical guarantee).
+ * - Emit a standardized event taxonomy to the GTM dataLayer.
+ * - Notify the in-browser Event Inspector HUD via a subscription bus.
+ *
+ * Third-party scripts (googletagmanager.com, connect.facebook.net) are only
+ * fetched after the main thread reports idle ({requestIdleCallback} / timeout
+ * fallback), protecting Core Web Vitals while keeping full tracking fidelity.
  */
 
+const MARKETING_CONFIG = {
+  gtmId: import.meta.env.VITE_GTM_ID || 'GTM-TEST1234',
+  metaPixelId: import.meta.env.VITE_META_PIXEL_ID || '1098472918234891'
+};
+
+/* ----------------------- Event Subscription Bus ------------------------ */
 const eventListeners = new Set();
 
-/**
- * Notify in-browser Event Inspector HUD
- */
 function notifyInspector(eventData) {
-  eventListeners.forEach(listener => {
+  eventListeners.forEach((listener) => {
     try {
       listener(eventData);
     } catch (e) {
@@ -20,39 +30,160 @@ function notifyInspector(eventData) {
     }
   });
 
-  // Also dispatch a DOM custom event for external integrations
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('marketing_event', { detail: eventData }));
   }
 }
 
-/**
- * Subscribe to tracking events (used by EventInspector component)
- */
 export function subscribeToEvents(callback) {
   eventListeners.add(callback);
   return () => eventListeners.delete(callback);
 }
 
+/* ----------------------- Lazy SDK Bootstrap ---------------------------- */
+let sdkBootstrapped = false;
+let sdkBootstrapQueued = false;
+
+const metaPixelEventQueue = [];
+
+function gtmId() {
+  return MARKETING_CONFIG.gtmId;
+}
+
+function metaPixelId() {
+  return MARKETING_CONFIG.metaPixelId;
+}
+
 /**
- * 1. Page View Tracking
+ * Fire a Meta Pixel event through a safe bridge that queues events until the
+ * script has fully initialized. This is what guarantees the conversion event
+ * reaches Meta even if the user converts before the idle-loaded SDK arrives.
  */
+function meta(...args) {
+  if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
+    window.fbq.apply(null, args);
+    return;
+  }
+  metaPixelEventQueue.push(args);
+}
+
+function flushMetaPixelQueue() {
+  if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
+    while (metaPixelEventQueue.length > 0) {
+      window.fbq.apply(null, metaPixelEventQueue.shift());
+    }
+  }
+}
+
+function loadGoogleTagManager() {
+  const w = window;
+  const d = document;
+  const l = 'dataLayer';
+
+  w[l] = w[l] || [];
+  w[l].push({
+    'gtm.start': new Date().getTime(),
+    event: 'gtm.js'
+  });
+
+  const f = d.getElementsByTagName('script')[0];
+  const j = d.createElement('script');
+  const dl = l !== 'dataLayer' ? `&l=${l}` : '';
+  j.async = true;
+  j.src = `https://www.googletagmanager.com/gtm.js?id=${gtmId()}${dl}`;
+  f.parentNode.insertBefore(j, f);
+}
+
+function loadMetaPixel() {
+  const windowRef = window;
+  const documentRef = document;
+
+  // Standard Meta Pixel loader (async, non-blocking)
+  function installPixelLoader(f, b, e, v, n, t, s) {
+    if (f.fbq) return;
+    n = f.fbq = function () {
+      if (n.callMethod) {
+        n.callMethod.apply(n, arguments);
+      } else {
+        n.queue.push(arguments);
+      }
+    };
+    if (!f._fbq) f._fbq = n;
+    n.push = n;
+    n.loaded = true;
+    n.version = '2.0';
+    n.queue = [];
+    t = b.createElement(e);
+    t.async = true;
+    t.src = v;
+    s = b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t, s);
+  }
+
+  installPixelLoader(windowRef, documentRef, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
+
+  window.fbq('init', metaPixelId());
+  window.fbq('track', 'PageView');
+  flushMetaPixelQueue();
+}
+
+/**
+ * Schedule GTM + Meta Pixel bootstrapping for the browser's idle moments.
+ * Safe to call multiple times; will only run once per page session.
+ */
+export function initTrackingSdk() {
+  if (
+    typeof window === 'undefined' ||
+    sdkBootstrapped ||
+    sdkBootstrapQueued
+  ) {
+    return;
+  }
+  sdkBootstrapQueued = true;
+
+  const bootstrap = () => {
+    if (sdkBootstrapped) return;
+    sdkBootstrapped = true;
+    try {
+      loadGoogleTagManager();
+    } catch (e) {
+      console.warn('[Tracking] GTM bootstrap failed:', e);
+    }
+    try {
+      loadMetaPixel();
+    } catch (e) {
+      console.warn('[Tracking] Meta Pixel bootstrap failed:', e);
+    }
+  };
+
+  if ('requestIdleCallback' in window) {
+    window.requestIdleCallback(bootstrap, { timeout: 3000 });
+  } else {
+    window.setTimeout(bootstrap, 1000);
+  }
+}
+
+/* ----------------------- Event Taxonomy -------------------------------- */
+
+// Prevents React StrictMode double-effect from double-firing page views.
+let lastPageViewPath = null;
+
 export function trackPageView(pageTitle = document.title, path = window.location.pathname) {
+  if (lastPageViewPath === path) return;
+  lastPageViewPath = path;
+
   const payload = {
     event: 'page_view',
     page_title: pageTitle,
     page_path: path,
-    page_location: window.location.href,
+    page_location: typeof window !== 'undefined' ? window.location.href : null,
     timestamp: new Date().toISOString()
   };
 
   if (typeof window !== 'undefined') {
     window.dataLayer = window.dataLayer || [];
     window.dataLayer.push(payload);
-
-    if (typeof window.fbq === 'function') {
-      window.fbq('track', 'PageView');
-    }
+    meta('track', 'PageView');
   }
 
   notifyInspector({
@@ -60,13 +191,8 @@ export function trackPageView(pageTitle = document.title, path = window.location
     type: 'page_view',
     payload
   });
-
-  console.log('[Tracking] Page View recorded:', payload);
 }
 
-/**
- * 2. CTA Click Tracking
- */
 export function trackCtaClick({ ctaName, location, target, text }) {
   const payload = {
     event: 'cta_click',
@@ -87,14 +213,10 @@ export function trackCtaClick({ ctaName, location, target, text }) {
     type: 'cta_click',
     payload
   });
-
-  console.log('[Tracking] CTA Click recorded:', payload);
 }
 
-/**
- * 3. Form Started Tracking (fires only once per session/form interaction)
- */
 let formStartedFired = false;
+
 export function trackFormStarted(formName = 'lead_generation_form', firstField = '') {
   if (formStartedFired) return;
   formStartedFired = true;
@@ -116,20 +238,12 @@ export function trackFormStarted(formName = 'lead_generation_form', firstField =
     type: 'form_started',
     payload
   });
-
-  console.log('[Tracking] Form Started recorded:', payload);
 }
 
-/**
- * Reset form started flag (e.g. after form submission or reset)
- */
 export function resetFormStartedTracking() {
   formStartedFired = false;
 }
 
-/**
- * 4. Form Submit Attempt Tracking
- */
 export function trackFormSubmitted(formName = 'lead_generation_form', metadata = {}) {
   const payload = {
     event: 'form_submitted',
@@ -148,13 +262,8 @@ export function trackFormSubmitted(formName = 'lead_generation_form', metadata =
     type: 'form_submitted',
     payload
   });
-
-  console.log('[Tracking] Form Submitted (attempt) recorded:', payload);
 }
 
-/**
- * 5. Form Submission Failure Tracking
- */
 export function trackFormSubmissionFailure(formName = 'lead_generation_form', reason, errors = []) {
   const payload = {
     event: 'form_submission_failure',
@@ -174,23 +283,21 @@ export function trackFormSubmissionFailure(formName = 'lead_generation_form', re
     type: 'form_submission_failure',
     payload
   });
-
-  console.warn('[Tracking] Form Submission Failure recorded:', payload);
 }
 
 /**
- * 6. Lead Conversion Tracking (Fires ONLY after verified successful API response)
- * Satisfies the critical assessment requirement:
- * "The conversion event must NOT fire simply because the submit button was clicked.
- * It should fire after a successful submission."
+ * Lead Conversion - FIRES ONLY after a verified successful API response.
+ * Contract: never fire on button click; only after HTTP 200 with a valid
+ * leadId. Uses the queue bridge so events issued before SDK load survive.
  */
-export function trackLeadSuccess({ leadId, name, email, company, estimatedValue = 250.00 }) {
+export function trackLeadSuccess({ leadId, company, estimatedValue = 250.00, name: _name, email: _email }) {
   const dataLayerPayload = {
     event: 'lead_generated',
     lead_id: leadId,
     lead_company: company,
     estimated_value: estimatedValue,
     currency: 'USD',
+    event_id: `evt_${leadId}`,
     timestamp: new Date().toISOString()
   };
 
@@ -199,21 +306,17 @@ export function trackLeadSuccess({ leadId, name, email, company, estimatedValue 
     content_category: 'Lead',
     value: estimatedValue,
     currency: 'USD',
-    lead_id: leadId
+    event_id: `evt_${leadId}`
   };
 
   if (typeof window !== 'undefined') {
-    // 1. Push to Google Tag Manager dataLayer
     window.dataLayer = window.dataLayer || [];
     window.dataLayer.push(dataLayerPayload);
 
-    // 2. Fire Meta Pixel 'Lead' conversion event
-    if (typeof window.fbq === 'function') {
-      window.fbq('track', 'Lead', metaPixelPayload);
-    }
+    // Conversion event - parallel-browser + server-side dedup via event_id.
+    meta('track', 'Lead', metaPixelPayload);
   }
 
-  // Notify Inspector HUD of both events
   notifyInspector({
     source: 'GTM & Meta Pixel',
     type: 'lead_generated (SUCCESS)',
@@ -221,10 +324,5 @@ export function trackLeadSuccess({ leadId, name, email, company, estimatedValue 
       dataLayer: dataLayerPayload,
       metaPixel: { event: 'Lead', ...metaPixelPayload }
     }
-  });
-
-  console.log('%c[Tracking SUCCESS] Meta Pixel "Lead" & GTM "lead_generated" fired!', 'color: #10B981; font-weight: bold;', {
-    dataLayer: dataLayerPayload,
-    metaPixel: metaPixelPayload
   });
 }

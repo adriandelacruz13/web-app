@@ -1,0 +1,18 @@
+{
+  "name": "Veloce Growth",
+  "short_name": "Veloce",
+  "description": "Predictable pipeline generation for scaling B2B SaaS and technology companies.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0B0F17",
+  "theme_color": "#0B0F17",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

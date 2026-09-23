@@ -80,6 +80,10 @@
   border: none;
   color: var(--text-primary);
   cursor: pointer;
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
 }
 
 .mobile-drawer {
@@ -1165,12 +1169,13 @@
   font-weight: 600;
 }
 
-.hud-toggle-btn {
+.hud-toggle-icon {
   background: transparent;
   border: none;
   color: var(--text-secondary);
   display: flex;
   align-items: center;
+  pointer-events: none;
 }
 
 .inspector-body {

@@ -1,46 +1,100 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" dir="ltr">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2306B6D4' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polygon points='13 2 3 14 12 14 11 22 21 10 12 10 13 2'/></svg>" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Viewport & Device Adaptation -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#0B0F17" />
+    <meta name="color-scheme" content="dark" />
+
+    <!-- Primary Metadata -->
     <title>Veloce Growth — B2B Demand Generation & Revenue Marketing</title>
     <meta name="description" content="Predictable pipeline generation for scaling B2B SaaS and technology companies. Full-funnel paid acquisition, outbound engines, and revenue attribution." />
-    
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+    <meta name="generator" content="Veloce Growth" />
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://velocegrowth.com/" />
+
+    <!-- Icons & Web App Manifest -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" sizes="any" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
     <!-- OpenGraph / Social Meta Tags -->
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Veloce Growth" />
+    <meta property="og:url" content="https://velocegrowth.com/" />
     <meta property="og:title" content="Veloce Growth — High-Velocity B2B Demand Generation" />
     <meta property="og:description" content="Scale qualified pipeline by 340% with data-driven demand marketing, custom ABM workflows, and revenue attribution." />
     <meta property="og:image" content="https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1200&q=80" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content="en_US" />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Veloce Growth — High-Velocity B2B Demand Generation" />
+    <meta name="twitter:description" content="Scale qualified pipeline by 340% with data-driven demand marketing, custom ABM workflows, and revenue attribution." />
+    <meta name="twitter:image" content="https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1200&q=80" />
 
-    <!-- Google Fonts: Plus Jakarta Sans & Outfit -->
+    <!-- Performance: preconnect to critical 3rd-party origins -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="dns-prefetch" href="https://connect.facebook.net" />
+    <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+
+    <!-- Google Fonts: Plus Jakarta Sans & Outfit (render-blocking kept minimal via swap) -->
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 
-    <!-- Google Tag Manager / dataLayer Initialization -->
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      window.dataLayer.push({
-        'gtm.start': new Date().getTime(),
-        event: 'gtm.js'
-      });
+    <!-- Structured Data: Organization + Service (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://velocegrowth.com/#organization",
+          "name": "Veloce Growth Partners",
+          "url": "https://velocegrowth.com/",
+          "description": "High-velocity B2B demand generation and revenue attribution partner for scaling technology companies.",
+          "email": "growth@velocepartners.com",
+          "telephone": "+1-415-555-0198",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "500 Howard Street, Suite 400",
+            "addressLocality": "San Francisco",
+            "addressRegion": "CA",
+            "postalCode": "94105",
+            "addressCountry": "US"
+          },
+          "sameAs": [
+            "https://linkedin.com",
+            "https://twitter.com",
+            "https://github.com"
+          ]
+        },
+        {
+          "@type": "Service",
+          "serviceType": "B2B Demand Generation & Revenue Marketing",
+          "provider": { "@id": "https://velocegrowth.com/#organization" },
+          "areaServed": "Worldwide",
+          "offers": {
+            "@type": "Offer",
+            "description": "Growth Engine, Scale Partner, and Enterprise Revenue engagements backed by contractual pipeline guarantees."
+          }
+        }
+      ]
+    }
     </script>
 
-    <!-- Meta Pixel Code Stub -->
-    <script>
-      !function(f,b,e,v,n,t,s)
-      {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-      n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-      if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-      n.queue=[];t=b.createElement(e);t.async=!0;
-      t.src=v;s=b.getElementsByTagName(e)[0];
-      s.parentNode.insertBefore(t,s)}(window, document,'script',
-      'https://connect.facebook.net/en_US/fbevents.js');
-      // Initialize with mock Pixel ID for demonstration
-      fbq('init', '1098472918234891');
-    </script>
+    <!--
+      IMPORTANT: GTM & Meta Pixel scripts are intentionally NOT embedded here.
+      They are bootstrapped asynchronously after the main thread goes idle in
+      src/utils/tracking.js to protect LCP/INP and honor "no unnecessary
+      third-party scripts" during initial render.
+    -->
   </head>
   <body>
     <div id="root"></div>

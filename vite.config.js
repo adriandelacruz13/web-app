@@ -29,6 +29,15 @@ function apiMiddlewarePlugin() {
           res.end(JSON.stringify(data));
         };
 
+        // GET /api/health (dev parity with production)
+        if (req.url === '/api/health' && req.method === 'GET') {
+          return sendJson(200, {
+            status: 'ok',
+            uptime: process.uptime(),
+            timestamp: new Date().toISOString()
+          });
+        }
+
         // POST /api/leads
         if (req.url === '/api/leads' && req.method === 'POST') {
           try {
@@ -75,5 +84,20 @@ export default defineConfig({
   server: {
     port: 3000,
     host: true
+  },
+  build: {
+    target: 'es2020',
+    // Split the immutable React runtime into its own cacheable chunk while
+    // keeping the lucide icon imports tree-shaken in the app bundle.
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (/node_modules\/(react|react-dom|scheduler)\//.test(id)) {
+            return 'vendor-react';
+          }
+          return undefined;
+        }
+      }
+    }
   }
 });

@@ -1,12 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, CheckCircle, AlertTriangle, Loader2, ShieldCheck, RefreshCw, HelpCircle } from 'lucide-react';
-import { 
-  trackFormStarted, 
-  trackFormSubmitted, 
-  trackFormSubmissionFailure, 
-  trackLeadSuccess, 
-  resetFormStartedTracking 
+import {
+  trackFormStarted,
+  trackFormSubmitted,
+  trackFormSubmissionFailure,
+  trackLeadSuccess,
+  resetFormStartedTracking
 } from '../utils/tracking';
+
+const FIELD_ORDER = ['name', 'email', 'company', 'phone', 'message'];
 
 export default function LeadForm() {
   const [formData, setFormData] = useState({
@@ -22,17 +24,25 @@ export default function LeadForm() {
   const [submissionStatus, setSubmissionStatus] = useState('idle'); // 'idle' | 'loading' | 'success' | 'error'
   const [responseDetails, setResponseDetails] = useState(null);
   const [serverError, setServerError] = useState('');
-  
+
   // Developer/Evaluator toggle to test simulated CRM failure
   const [simulateCrmFailure, setSimulateCrmFailure] = useState(false);
 
   // Idempotency token per form session
   const idempotencyKeyRef = useRef('');
+  const successPanelRef = useRef(null);
 
   useEffect(() => {
     // Generate unique idempotency key for this form session
     idempotencyKeyRef.current = 'idemp_' + Math.random().toString(36).substring(2, 15) + '_' + Date.now();
   }, []);
+
+  // Move focus into the success panel so screen readers announce the outcome.
+  useEffect(() => {
+    if (submissionStatus === 'success') {
+      successPanelRef.current?.focus();
+    }
+  }, [submissionStatus]);
 
   // Sync simulated CRM failure mode to backend
   const handleToggleCrmFailure = async (e) => {
@@ -52,7 +62,7 @@ export default function LeadForm() {
   // Field change handler
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    
+
     // Fire form_started tracking on first interaction
     trackFormStarted('lead_generation_form', name);
 
@@ -97,6 +107,14 @@ export default function LeadForm() {
     return errors;
   };
 
+  // Focus the first invalid field for keyboard + assistive tech users.
+  const focusFirstInvalid = (errors) => {
+    const firstInvalid = FIELD_ORDER.find((k) => errors[k]);
+    if (firstInvalid) {
+      document.getElementById(`field-${firstInvalid}`)?.focus();
+    }
+  };
+
   // Submission handler
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -112,6 +130,7 @@ export default function LeadForm() {
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
       trackFormSubmissionFailure('lead_generation_form', 'client_validation_failed', Object.keys(errors));
+      focusFirstInvalid(errors);
       return;
     }
 
@@ -158,7 +177,7 @@ export default function LeadForm() {
       console.error('[Form Submit Error]:', err);
       setSubmissionStatus('error');
       setServerError(err.message || 'Unable to submit your request. Please check your connection and try again.');
-      
+
       // Track submission failure
       trackFormSubmissionFailure('lead_generation_form', 'api_network_error', [err.message]);
     } finally {
@@ -223,16 +242,16 @@ export default function LeadForm() {
             {/* Assessment QA Sandbox Controls Box */}
             <div className="evaluator-sandbox-box">
               <div className="sandbox-header">
-                <HelpCircle size={16} className="text-accent" />
+                <HelpCircle size={16} className="text-accent" aria-hidden="true" />
                 <span className="sandbox-title">Technical Assessment Sandbox</span>
               </div>
               <p className="sandbox-hint">
                 You can simulate CRM API failures to observe how the backend handles rate limits, exponential retries, and dead-letter queueing:
               </p>
               <label className="sandbox-toggle-label">
-                <input 
-                  type="checkbox" 
-                  checked={simulateCrmFailure} 
+                <input
+                  type="checkbox"
+                  checked={simulateCrmFailure}
                   onChange={handleToggleCrmFailure}
                   className="sandbox-checkbox"
                 />
@@ -246,9 +265,15 @@ export default function LeadForm() {
             <div className="form-card">
               {submissionStatus === 'success' ? (
                 /* Success State Screen */
-                <div className="form-success-state" role="alert" aria-live="polite">
+                <div
+                  ref={successPanelRef}
+                  className="form-success-state"
+                  role="status"
+                  aria-live="polite"
+                  tabIndex={-1}
+                >
                   <div className="success-icon-wrap">
-                    <CheckCircle size={44} className="text-success" />
+                    <CheckCircle size={44} className="text-success" aria-hidden="true" />
                   </div>
                   <h3 className="success-title">Strategy Session Requested!</h3>
                   <p className="success-message">
@@ -257,7 +282,7 @@ export default function LeadForm() {
 
                   <div className="success-details-card">
                     <div className="detail-row">
-                      <span className="detail-label">Reference ID:</span>
+                      <span className="detail-label" id="ref-id-label">Reference ID:</span>
                       <span className="detail-value font-mono">{responseDetails?.leadId}</span>
                     </div>
                     <div className="detail-row">
@@ -276,12 +301,12 @@ export default function LeadForm() {
                     </div>
                   </div>
 
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     className="btn btn-secondary w-full mt-lg"
                     onClick={handleResetForm}
                   >
-                    <RefreshCw size={16} />
+                    <RefreshCw size={16} aria-hidden="true" />
                     <span>Submit Another Inquiry</span>
                   </button>
                 </div>
@@ -295,7 +320,7 @@ export default function LeadForm() {
 
                   {serverError && (
                     <div className="alert alert-error" role="alert">
-                      <AlertTriangle size={18} className="alert-icon" />
+                      <AlertTriangle size={18} className="alert-icon" aria-hidden="true" />
                       <span>{serverError}</span>
                     </div>
                   )}
@@ -303,42 +328,50 @@ export default function LeadForm() {
                   {/* Name Field */}
                   <div className="form-group">
                     <label htmlFor="field-name" className="form-label">
-                      Full Name <span className="text-required">*</span>
+                      Full Name <span className="text-required" aria-hidden="true">*</span>
                     </label>
                     <input
                       id="field-name"
                       type="text"
                       name="name"
+                      autoComplete="name"
                       value={formData.name}
                       onChange={handleInputChange}
                       placeholder="e.g. Sarah Jenkins"
                       className={`form-input ${fieldErrors.name ? 'input-error' : ''}`}
                       disabled={isSubmitting}
                       required
+                      aria-required="true"
+                      aria-invalid={fieldErrors.name || undefined}
+                      aria-describedby={fieldErrors.name ? 'field-name-error' : undefined}
                     />
                     {fieldErrors.name && (
-                      <span className="field-error-msg">{fieldErrors.name}</span>
+                      <span id="field-name-error" className="field-error-msg">{fieldErrors.name}</span>
                     )}
                   </div>
 
                   {/* Email Field */}
                   <div className="form-group">
                     <label htmlFor="field-email" className="form-label">
-                      Work Email <span className="text-required">*</span>
+                      Work Email <span className="text-required" aria-hidden="true">*</span>
                     </label>
                     <input
                       id="field-email"
                       type="email"
                       name="email"
+                      autoComplete="email"
                       value={formData.email}
                       onChange={handleInputChange}
                       placeholder="sarah@company.com"
                       className={`form-input ${fieldErrors.email ? 'input-error' : ''}`}
                       disabled={isSubmitting}
                       required
+                      aria-required="true"
+                      aria-invalid={fieldErrors.email || undefined}
+                      aria-describedby={fieldErrors.email ? 'field-email-error' : undefined}
                     />
                     {fieldErrors.email && (
-                      <span className="field-error-msg">{fieldErrors.email}</span>
+                      <span id="field-email-error" className="field-error-msg">{fieldErrors.email}</span>
                     )}
                   </div>
 
@@ -346,41 +379,50 @@ export default function LeadForm() {
                   <div className="form-row">
                     <div className="form-group">
                       <label htmlFor="field-company" className="form-label">
-                        Company Name <span className="text-required">*</span>
+                        Company Name <span className="text-required" aria-hidden="true">*</span>
                       </label>
                       <input
                         id="field-company"
                         type="text"
                         name="company"
+                        autoComplete="organization"
                         value={formData.company}
                         onChange={handleInputChange}
                         placeholder="Acme Technologies"
                         className={`form-input ${fieldErrors.company ? 'input-error' : ''}`}
                         disabled={isSubmitting}
                         required
+                        aria-required="true"
+                        aria-invalid={fieldErrors.company || undefined}
+                        aria-describedby={fieldErrors.company ? 'field-company-error' : undefined}
                       />
                       {fieldErrors.company && (
-                        <span className="field-error-msg">{fieldErrors.company}</span>
+                        <span id="field-company-error" className="field-error-msg">{fieldErrors.company}</span>
                       )}
                     </div>
 
                     <div className="form-group">
                       <label htmlFor="field-phone" className="form-label">
-                        Phone Number <span className="text-required">*</span>
+                        Phone Number <span className="text-required" aria-hidden="true">*</span>
                       </label>
                       <input
                         id="field-phone"
                         type="tel"
                         name="phone"
+                        inputMode="tel"
+                        autoComplete="tel"
                         value={formData.phone}
                         onChange={handleInputChange}
                         placeholder="+1 (555) 234-5678"
                         className={`form-input ${fieldErrors.phone ? 'input-error' : ''}`}
                         disabled={isSubmitting}
                         required
+                        aria-required="true"
+                        aria-invalid={fieldErrors.phone || undefined}
+                        aria-describedby={fieldErrors.phone ? 'field-phone-error' : undefined}
                       />
                       {fieldErrors.phone && (
-                        <span className="field-error-msg">{fieldErrors.phone}</span>
+                        <span id="field-phone-error" className="field-error-msg">{fieldErrors.phone}</span>
                       )}
                     </div>
                   </div>
@@ -388,7 +430,7 @@ export default function LeadForm() {
                   {/* Message Field */}
                   <div className="form-group">
                     <label htmlFor="field-message" className="form-label">
-                      Growth Goals & Current Challenges <span className="text-required">*</span>
+                      Growth Goals & Current Challenges <span className="text-required" aria-hidden="true">*</span>
                     </label>
                     <textarea
                       id="field-message"
@@ -400,9 +442,12 @@ export default function LeadForm() {
                       className={`form-textarea ${fieldErrors.message ? 'input-error' : ''}`}
                       disabled={isSubmitting}
                       required
+                      aria-required="true"
+                      aria-invalid={fieldErrors.message || undefined}
+                      aria-describedby={fieldErrors.message ? 'field-message-error' : undefined}
                     />
                     {fieldErrors.message && (
-                      <span className="field-error-msg">{fieldErrors.message}</span>
+                      <span id="field-message-error" className="field-error-msg">{fieldErrors.message}</span>
                     )}
                   </div>
 
@@ -415,19 +460,19 @@ export default function LeadForm() {
                   >
                     {isSubmitting ? (
                       <>
-                        <Loader2 size={18} className="spinner" />
+                        <Loader2 size={18} className="spinner" aria-hidden="true" />
                         <span>Validating & Processing Lead...</span>
                       </>
                     ) : (
                       <>
                         <span>Submit Strategy Request</span>
-                        <Send size={16} />
+                        <Send size={16} aria-hidden="true" />
                       </>
                     )}
                   </button>
 
                   <div className="form-security-footer">
-                    <ShieldCheck size={14} className="text-muted" />
+                    <ShieldCheck size={14} className="text-muted" aria-hidden="true" />
                     <span>Your data is protected. Zero spam. Strict confidentiality agreement.</span>
                   </div>
                 </form>

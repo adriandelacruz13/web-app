@@ -37,7 +37,7 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
  * Includes exponential backoff retry logic
  */
 export async function syncLeadToHubSpot(leadData, maxRetries = 3) {
-  const crmApiKey = process.env.HUBSPOT_API_KEY || 'hs_pat_demo_secret_token_never_sent_to_browser';
+  const credentialConfigured = !!(process.env.HUBSPOT_API_KEY);
 
   // Format payload according to HubSpot Contacts v3 API
   const hubspotPayload = {
@@ -74,6 +74,7 @@ export async function syncLeadToHubSpot(leadData, maxRetries = 3) {
       return {
         success: true,
         crm: 'HubSpot',
+        credentialSource: credentialConfigured ? 'env' : 'demo',
         contactId: hubspotContactId,
         syncedAt: new Date().toISOString(),
         attemptsNeeded: attempt,

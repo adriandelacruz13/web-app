@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Activity, ChevronUp, ChevronDown, CheckCircle2, AlertCircle, Database, Trash2, Shield } from 'lucide-react';
+import { Activity, ChevronUp, ChevronDown, AlertCircle, Database, Trash2 } from 'lucide-react';
 import { subscribeToEvents } from '../utils/tracking';
 
 export default function EventInspector() {
@@ -33,7 +33,7 @@ export default function EventInspector() {
           const data = await res.json();
           setCrmStatus(data);
         }
-      } catch (e) {
+      } catch {
         // quiet fallback
       }
     };
@@ -50,30 +50,39 @@ export default function EventInspector() {
       className={`event-inspector-hud ${isOpen ? 'inspector-open' : 'inspector-collapsed'}`}
       aria-label="Marketing Tracking & CRM Event Inspector"
     >
-      {/* HUD Header Bar */}
-      <div className="inspector-header" onClick={() => setIsOpen(!isOpen)}>
+{/* HUD Header Bar (keyboard-accessible toggle) */}
+      <div
+        className="inspector-header"
+        role="button"
+        tabIndex={0}
+        aria-expanded={isOpen}
+        aria-controls="inspector-body"
+        onClick={() => setIsOpen(!isOpen)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setIsOpen(!isOpen);
+          }
+        }}
+      >
         <div className="inspector-title-wrap">
-          <div className="pulse-indicator" />
-          <Activity size={16} className="text-accent" />
+          <div className="pulse-indicator" aria-hidden="true" />
+          <Activity size={16} className="text-accent" aria-hidden="true" />
           <span className="inspector-title">Tracking & CRM Inspector</span>
-          <span className="event-count-badge">{events.length}</span>
+          <span className="event-count-badge" aria-live="polite">{events.length}</span>
         </div>
 
         <div className="inspector-header-controls">
           <span className="hud-status-chip">GTM & Meta Active</span>
-          <button 
-            type="button" 
-            className="hud-toggle-btn"
-            aria-label={isOpen ? "Collapse inspector" : "Expand inspector"}
-          >
+          <span className="hud-toggle-icon" aria-hidden="true">
             {isOpen ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
-          </button>
+          </span>
         </div>
       </div>
 
       {/* HUD Expanded Body */}
       {isOpen && (
-        <div className="inspector-body">
+        <div id="inspector-body" className="inspector-body">
           {/* Tabs */}
           <div className="inspector-tabs">
             <button 
