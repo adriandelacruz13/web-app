@@ -45,8 +45,12 @@
     <link rel="dns-prefetch" href="https://connect.facebook.net" />
     <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
 
-    <!-- Google Fonts: Plus Jakarta Sans & Outfit (render-blocking kept minimal via swap) -->
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <!--
+      Google Fonts (Plus Jakarta Sans & Outfit) are NOT loaded here: a
+      render-blocking stylesheet would delay first paint. They are injected
+      non-blocking after the app mounts (see src/main.jsx loadWebFonts()).
+      display=swap + system fallbacks prevent any invisible-text flash.
+    -->
 
     <!-- Structured Data: Organization + Service (JSON-LD) -->
     <script type="application/ld+json">

@@ -74,7 +74,7 @@ export default function SocialProof() {
             <div key={idx} className="case-card">
               <div className="case-card-header">
                 <span className="case-tag">{study.tag}</span>
-                <div className="stars-row" aria-label="5 out of 5 stars">
+                <div className="stars-row" role="img" aria-label="5 out of 5 stars rating">
                   {[...Array(5)].map((_, i) => (
                     <Star key={i} size={14} className="star-icon fill-accent text-accent" />
                   ))}
@@ -93,7 +93,7 @@ export default function SocialProof() {
 
               <div className="case-author-bar">
                 <div>
-                  <h4 className="author-name">{study.author}</h4>
+                  <h3 className="author-name">{study.author}</h3>
                   <p className="author-role">{study.role} &middot; <strong>{study.client}</strong></p>
                 </div>
                 <a 

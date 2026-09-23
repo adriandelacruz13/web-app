@@ -43,6 +43,7 @@ export function subscribeToEvents(callback) {
 /* ----------------------- Lazy SDK Bootstrap ---------------------------- */
 let sdkBootstrapped = false;
 let sdkBootstrapQueued = false;
+let metaPixelActivated = false;
 
 const metaPixelEventQueue = [];
 
@@ -123,13 +124,41 @@ function loadMetaPixel() {
   installPixelLoader(windowRef, documentRef, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
 
   window.fbq('init', metaPixelId());
-  window.fbq('track', 'PageView');
+  // Do NOT auto-fire PageView here: page views are tracked via the queue
+  // bridge (see trackPageView), keeping the Meta payloads exactly 1:1 with
+  // the GTM dataLayer and avoiding double page-view emissions.
   flushMetaPixelQueue();
 }
 
 /**
- * Schedule GTM + Meta Pixel bootstrapping for the browser's idle moments.
- * Safe to call multiple times; will only run once per page session.
+ * Activate the Meta Pixel on first user interaction (privacy-first,
+ * CWV-friendly). The pixel script + init run only after the visitor shows
+ * engagement intent, which keeps third-party cookies (and their impact)
+ * out of the initial page load. Conversion payloads issued before this
+ * moment are preserved by the queue bridge.
+ */
+function activateMetaPixel() {
+  if (metaPixelActivated) return;
+  metaPixelActivated = true;
+
+  try {
+    loadMetaPixel();
+  } catch (e) {
+    console.warn('[Tracking] Meta Pixel bootstrap failed:', e);
+  }
+}
+
+function onFirstInteraction(callback) {
+  if (typeof window === 'undefined') return;
+  window.addEventListener('pointerdown', callback, { once: true });
+  window.addEventListener('keydown', callback, { once: true });
+  window.addEventListener('touchstart', callback, { once: true });
+}
+
+/**
+ * Schedule GTM for the browser's idle moments and arm the Meta Pixel to
+ * activate on first interaction. Safe to call multiple times; will only
+ * run once per page session.
  */
 export function initTrackingSdk() {
   if (
@@ -141,7 +170,7 @@ export function initTrackingSdk() {
   }
   sdkBootstrapQueued = true;
 
-  const bootstrap = () => {
+  const sdkBootstrap = () => {
     if (sdkBootstrapped) return;
     sdkBootstrapped = true;
     try {
@@ -149,17 +178,16 @@ export function initTrackingSdk() {
     } catch (e) {
       console.warn('[Tracking] GTM bootstrap failed:', e);
     }
-    try {
-      loadMetaPixel();
-    } catch (e) {
-      console.warn('[Tracking] Meta Pixel bootstrap failed:', e);
-    }
   };
 
   if ('requestIdleCallback' in window) {
-    window.requestIdleCallback(bootstrap, { timeout: 3000 });
+    window.requestIdleCallback(sdkBootstrap, { timeout: 3000 });
   } else {
-    window.setTimeout(bootstrap, 1000);
+    window.setTimeout(sdkBootstrap, 1000);
+  }
+
+  if (typeof window !== 'undefined' && !metaPixelActivated) {
+    onFirstInteraction(activateMetaPixel);
   }
 }
 

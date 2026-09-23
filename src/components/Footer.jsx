@@ -42,7 +42,7 @@ export default function Footer() {
 
           {/* Quick Links */}
           <div className="footer-links-col">
-            <h5 className="footer-heading">Solutions</h5>
+            <h2 className="footer-heading">Solutions</h2>
             <ul className="footer-links-list">
               <li><a href="#services" onClick={() => handleFooterLink('Paid Media', '#services')}>B2B Paid Media</a></li>
               <li><a href="#services" onClick={() => handleFooterLink('Inbound & SEO', '#services')}>High-Intent Inbound</a></li>
@@ -53,7 +53,7 @@ export default function Footer() {
 
           {/* Company Links */}
           <div className="footer-links-col">
-            <h5 className="footer-heading">Company</h5>
+            <h2 className="footer-heading">Company</h2>
             <ul className="footer-links-list">
               <li><a href="#results" onClick={() => handleFooterLink('Case Studies', '#results')}>Client Case Studies</a></li>
               <li><a href="#pricing" onClick={() => handleFooterLink('Pricing & SLAs', '#pricing')}>Pricing & Guarantees</a></li>
@@ -64,7 +64,7 @@ export default function Footer() {
 
           {/* Direct Contact */}
           <div className="footer-links-col">
-            <h5 className="footer-heading">Contact</h5>
+            <h2 className="footer-heading">Contact</h2>
             <ul className="footer-contact-list">
               <li className="contact-item">
                 <MapPin size={16} className="contact-icon text-accent" />

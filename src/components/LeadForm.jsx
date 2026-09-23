@@ -215,7 +215,7 @@ export default function LeadForm() {
             </p>
 
             <div className="audit-deliverables">
-              <h4 className="deliverables-title">WHAT YOU RECEIVE IN THE AUDIT:</h4>
+              <h3 className="deliverables-title">WHAT YOU RECEIVE IN THE AUDIT:</h3>
               <div className="deliverable-item">
                 <div className="deliv-num">01</div>
                 <div>
